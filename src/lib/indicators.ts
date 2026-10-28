@@ -118,46 +118,6 @@ export function atr(high: number[], low: number[], close: number[], period = 14)
   return out;
 }
 
-/**
- * Support/resistance from swing points: a bar whose high (low) is the highest
- * (lowest) within `window` bars on each side. Nearby levels are merged.
- */
-export function supportResistance(
-  high: number[],
-  low: number[],
-  lastPrice: number,
-  window = 5,
-  maxLevels = 3,
-): { support: number[]; resistance: number[] } {
-  const pivots: number[] = [];
-  for (let i = window; i < high.length - window; i++) {
-    let isHigh = true;
-    let isLow = true;
-    for (let j = i - window; j <= i + window; j++) {
-      if (high[j] > high[i]) isHigh = false;
-      if (low[j] < low[i]) isLow = false;
-    }
-    if (isHigh) pivots.push(high[i]);
-    if (isLow) pivots.push(low[i]);
-  }
-  // Merge pivots within 1.5% of each other.
-  pivots.sort((a, b) => a - b);
-  const levels: number[] = [];
-  let group: number[] = [];
-  for (const p of pivots) {
-    if (group.length && Math.abs(p - group[0]) / group[0] > 0.015) {
-      levels.push(group.reduce((a, b) => a + b, 0) / group.length);
-      group = [];
-    }
-    group.push(p);
-  }
-  if (group.length) levels.push(group.reduce((a, b) => a + b, 0) / group.length);
-
-  const support = levels.filter((l) => l < lastPrice).sort((a, b) => b - a).slice(0, maxLevels);
-  const resistance = levels.filter((l) => l > lastPrice).sort((a, b) => a - b).slice(0, maxLevels);
-  return { support, resistance };
-}
-
 export function last(series: Series, offset = 0): number | null {
   for (let i = series.length - 1 - offset; i >= 0; i--) {
     if (series[i] !== null) return series[i];

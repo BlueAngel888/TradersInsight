@@ -11,6 +11,10 @@ Aplicație web (instalabilă pe telefon ca PWA) care oferă analiză tehnică ș
   detaliate sunt explicațiile și ce grafice și metrici apar.
 - **Analiză tehnică:** trend (SMA 50/200), RSI 14, MACD 12/26/9, benzi Bollinger 20/2, evoluție pe o lună,
   ATR, niveluri de suport și rezistență, plus un rezumat pozitiv / neutru / negativ.
+- **Taburi de analiză deasupra graficului**, care se pot combina: medii mobile, suport/rezistență (cu putere 1–3),
+  SMC (BOS, CHoCH, order blocks, fair value gaps, premium/discount), Wyckoff (faze și evenimente),
+  Elliott (numărătoare automată cu ținte Fibonacci), Volume Profile (POC, Value Area), VWAP ancorat și Bollinger.
+  Pentru fiecare tab activ, sub grafic apare ce arată, explicat pe nivelul utilizatorului.
 - **Analiză fundamentală (acțiuni):** P/E, creșterea veniturilor, marja de profit, ROE, datorii/capital,
   dividende. Pentru crypto: capitalizare, volum, ofertă în circulație.
 - **Grafice interactive** (TradingView Lightweight Charts), căutare de simboluri, watchlist local.
@@ -37,5 +41,8 @@ Dacă sursa nu răspunde, aplicația afișează date demonstrative și un banner
 
 - `src/lib/indicators.ts`: indicatorii tehnici (funcții pure, testate)
 - `src/lib/analysis.ts`: interpretarea indicatorilor și a datelor fundamentale
+- `src/lib/advanced.ts`: SMC, Wyckoff, Elliott, Volume Profile, VWAP, niveluri cheie (funcții pure, testate)
+- `src/lib/structure.ts`: observațiile și elementele de grafic pentru fiecare sistem
+- `src/components/ChartWorkspace.tsx`: graficul cu taburi
 - `src/lib/market.ts`: sursa de date, cu cache de 5 minute
 - `src/components/AssetView.tsx`: pagina unui activ, adaptată nivelului

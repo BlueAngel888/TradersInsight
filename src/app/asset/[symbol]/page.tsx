@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AssetView } from "@/components/AssetView";
 import { analyzeFundamentals, analyzeTechnical } from "@/lib/analysis";
 import { getAsset } from "@/lib/market";
+import { analyzeStructure } from "@/lib/structure";
 
 export const dynamic = "force-dynamic";
 
@@ -17,5 +18,6 @@ export default async function AssetPage({ params }: Props) {
   const data = await getAsset(decodeURIComponent(symbol).toUpperCase());
   const technical = analyzeTechnical(data.candles);
   const fundamental = data.quote.market === "stocks" && data.fundamentals ? analyzeFundamentals(data.fundamentals) : null;
-  return <AssetView data={data} technical={technical} fundamental={fundamental} />;
+  const structure = analyzeStructure(data.candles);
+  return <AssetView data={data} technical={technical} fundamental={fundamental} structure={structure} />;
 }

@@ -1,4 +1,4 @@
-import { atr, bollinger, last, macd, rsi, sma, supportResistance } from "./indicators";
+import { atr, bollinger, last, macd, rsi, sma } from "./indicators";
 import type { Candle, Fundamentals } from "./types";
 
 export type Verdict = "positive" | "negative" | "neutral";
@@ -25,7 +25,6 @@ export interface Summary {
 export interface TechnicalAnalysis {
   signals: Signal[];
   summary: Summary;
-  levels: { support: number[]; resistance: number[] };
   atrPercent: number | null;
 }
 
@@ -66,7 +65,7 @@ export function analyzeTechnical(candles: Candle[]): TechnicalAnalysis {
           ? "Prețul a crescut constant în ultimele luni: tendința pe termen lung este ascendentă."
           : verdict === "negative"
             ? "Prețul a scăzut în ultimele luni: tendința pe termen lung este descendentă."
-            : "Tendința nu este clară: semnalele pe termen scurt și lung se contrazic.",
+            : "Tendința nu este clară: indicatorii pe termen scurt și lung se contrazic.",
       detail: `SMA50 = ${fmt(sma50)}, SMA200 = ${fmt(sma200)}. ${
         golden ? "Configurație de tip „golden cross” (SMA50 > SMA200)." : "Configurație de tip „death cross” (SMA50 < SMA200)."
       }`,
@@ -169,7 +168,6 @@ export function analyzeTechnical(candles: Candle[]): TechnicalAnalysis {
   return {
     signals,
     summary: summarize(signals),
-    levels: supportResistance(high.slice(-180), low.slice(-180), price),
     atrPercent: atrNow !== null ? atrNow / price : null,
   };
 }

@@ -2,34 +2,27 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import type { FundamentalAnalysis, Signal, Summary, TechnicalAnalysis, Verdict } from "@/lib/analysis";
-import { bollinger, macd, rsi, sma } from "@/lib/indicators";
+import type { FundamentalAnalysis, Signal, Summary, TechnicalAnalysis } from "@/lib/analysis";
+import { macd, rsi } from "@/lib/indicators";
+import type { KeyLevel } from "@/lib/advanced";
+import type { StructureAnalysis } from "@/lib/structure";
 import { MARKET_LABELS } from "@/lib/catalog";
 import type { AssetData, Level } from "@/lib/types";
 import { useLevel } from "./LevelProvider";
 import { Onboarding } from "./Onboarding";
-import { OscillatorChart, PriceChart, type Overlay } from "./PriceChart";
+import { OscillatorChart, type Overlay } from "./PriceChart";
+import { ChartWorkspace } from "./ChartWorkspace";
+import { VerdictBadge } from "./VerdictBadge";
 import { DemoBanner } from "./DemoBanner";
 import { Disclaimer } from "./Disclaimer";
 import { formatBig, formatPercent, formatPrice } from "./format";
 
-const VERDICT_STYLE: Record<Verdict, { label: string; className: string }> = {
-  positive: { label: "Pozitiv", className: "bg-up/15 text-up border-up/40" },
-  negative: { label: "Negativ", className: "bg-down/15 text-down border-down/40" },
-  neutral: { label: "Neutru", className: "bg-muted/15 text-muted border-muted/40" },
-};
-
-function VerdictBadge({ verdict }: { verdict: Verdict }) {
-  const v = VERDICT_STYLE[verdict];
-  return <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${v.className}`}>{v.label}</span>;
-}
-
 function SummaryCard({ title, summary, level }: { title: string; summary: Summary; level: Level }) {
   const text =
     summary.verdict === "positive"
-      ? "Majoritatea indicatorilor arată semnale pozitive."
+      ? "Majoritatea indicatorilor descriu un context pozitiv."
       : summary.verdict === "negative"
-        ? "Majoritatea indicatorilor arată semnale negative."
+        ? "Majoritatea indicatorilor descriu un context negativ."
         : "Indicatorii sunt împărțiți: nu există o direcție clară.";
   return (
     <div className="rounded-xl border border-line bg-panel p-5">
@@ -81,44 +74,42 @@ const pctOrDash = (n?: number) => (n === undefined || n === null ? "–" : forma
 const numOrDash = (n?: number, d = 2) =>
   n === undefined || n === null ? "–" : n.toLocaleString("ro-RO", { maximumFractionDigits: d });
 
-export function AssetView({ data, technical, fundamental }: {
+const stars = (l: KeyLevel) => "★".repeat(l.strength) + "☆".repeat(3 - l.strength);
+
+function LevelList({ title, levels, color }: { title: string; levels: KeyLevel[]; color: string }) {
+  return (
+    <div className="rounded-lg border border-line bg-panel p-3">
+      <div className="text-xs text-muted">{title}</div>
+      {levels.length === 0 ? (
+        <div className="mt-1 text-sm">–</div>
+      ) : (
+        <ul className="mt-1 space-y-0.5 font-mono text-sm">
+          {levels.map((l) => (
+            <li key={l.price} className="flex justify-between gap-2">
+              <span>{formatPrice(l.price)}</span>
+              <span className={color} title={`${l.touches} atingeri`}>{stars(l)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+export function AssetView({ data, technical, fundamental, structure }: {
   data: AssetData;
   technical: TechnicalAnalysis;
   fundamental: FundamentalAnalysis | null;
+  structure: StructureAnalysis;
 }) {
   const { ready, level, watchlist, toggleWatch } = useLevel();
   const { quote, candles, fundamentals: f } = data;
 
   const charts = useMemo(() => {
     const close = candles.map((c) => c.close);
-    const bb = bollinger(close);
     const m = macd(close);
-    return {
-      sma50: sma(close, 50),
-      sma200: sma(close, 200),
-      bbUpper: bb.upper,
-      bbLower: bb.lower,
-      rsi: rsi(close),
-      macd: m.macd,
-      signal: m.signal,
-      hist: m.histogram,
-    };
+    return { rsi: rsi(close), macd: m.macd, signal: m.signal, hist: m.histogram };
   }, [candles]);
-
-  const overlays = useMemo<Overlay[]>(() => {
-    if (!level) return [];
-    const list: Overlay[] = [
-      { label: "Media 50 zile", color: "#60a5fa", values: charts.sma50 },
-      { label: "Media 200 zile", color: "#f59e0b", values: charts.sma200 },
-    ];
-    if (level === "advanced") {
-      list.push(
-        { label: "Bollinger sus", color: "#a78bfa", values: charts.bbUpper, dashed: true },
-        { label: "Bollinger jos", color: "#a78bfa", values: charts.bbLower, dashed: true },
-      );
-    }
-    return list;
-  }, [charts, level]);
 
   const rsiLines = useMemo<Overlay[]>(() => [{ label: "RSI", color: "#38bdf8", values: charts.rsi }], [charts]);
   const macdLines = useMemo<Overlay[]>(
@@ -129,7 +120,6 @@ export function AssetView({ data, technical, fundamental }: {
     [charts],
   );
   const rsiBands = useMemo(() => [30, 70], []);
-  const levels = level === "beginner" ? undefined : technical.levels;
 
   if (!ready) return null;
   if (!level) return <Onboarding />;
@@ -167,15 +157,14 @@ export function AssetView({ data, technical, fundamental }: {
 
       <Disclaimer />
 
-      <section className="rounded-xl border border-line bg-panel p-4">
-        <PriceChart candles={candles} overlays={overlays} levels={levels} />
-        {level === "beginner" && (
-          <p className="mt-3 text-sm text-muted">
-            Fiecare bară arată evoluția prețului într-o zi: verde dacă a crescut, roșu dacă a scăzut. Liniile colorate
-            sunt prețul mediu din ultimele 50, respectiv 200 de zile și arată direcția generală.
-          </p>
-        )}
-      </section>
+      <ChartWorkspace candles={candles} level={level} technical={technical} structure={structure} />
+      {level === "beginner" && (
+        <p className="text-sm text-muted">
+          Fiecare bară arată evoluția prețului într-o zi: verde dacă a crescut, roșu dacă a scăzut. Apasă pe sistemele
+          de deasupra graficului ca să le afișezi sau să le ascunzi; le poți combina. Aceste metode sunt interpretări,
+          nu certitudini: specialiștii ajung adesea la concluzii diferite pe același grafic.
+        </p>
+      )}
 
       {level !== "beginner" && (
         <section className="grid gap-4 md:grid-cols-2">
@@ -195,15 +184,13 @@ export function AssetView({ data, technical, fundamental }: {
           <h2 className="text-xl font-semibold">Analiză tehnică</h2>
           <SummaryCard title="Rezumat tehnic" summary={technical.summary} level={level} />
           <SignalList signals={technical.signals} level={level} />
-          {level !== "beginner" && (
-            <div className="grid grid-cols-2 gap-3">
-              <Metric label="Suporturi" value={technical.levels.support.map((p) => formatPrice(p)).join(" · ") || "–"} />
-              <Metric label="Rezistențe" value={technical.levels.resistance.map((p) => formatPrice(p)).join(" · ") || "–"} />
-              {level === "advanced" && technical.atrPercent !== null && (
-                <Metric label="Volatilitate zilnică (ATR 14)" value={`${(technical.atrPercent * 100).toFixed(2)}%`} />
-              )}
-            </div>
-          )}
+          <div className="grid grid-cols-2 gap-3">
+            <LevelList title="Suporturi (putere)" levels={structure.levels.support} color="text-up" />
+            <LevelList title="Rezistențe (putere)" levels={structure.levels.resistance} color="text-down" />
+            {level === "advanced" && technical.atrPercent !== null && (
+              <Metric label="Volatilitate zilnică (ATR 14)" value={`${(technical.atrPercent * 100).toFixed(2)}%`} />
+            )}
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -212,6 +199,11 @@ export function AssetView({ data, technical, fundamental }: {
             <p className="rounded-xl border border-line bg-panel p-4 text-sm text-muted">
               Perechile valutare nu au date fundamentale de companie. Cursul este influențat de dobânzile băncilor
               centrale, inflație, balanța comercială și evenimente geopolitice.
+            </p>
+          )}
+          {quote.market === "crypto" && !f && (
+            <p className="rounded-xl border border-line bg-panel p-4 text-sm text-muted">
+              Criptomonedele nu au profit sau venituri ca o companie, iar datele de piață nu sunt disponibile momentan.
             </p>
           )}
           {quote.market === "crypto" && f && (
