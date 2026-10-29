@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: 11 15 23;
+  --panel: 17 23 34;
+  --panel-hover: 24 32 46;
+  --line: 36 46 62;
+  --fg: 229 233 240;
+  --muted: 148 160 178;
+  --accent: 56 189 248;
+  --up: 34 197 94;
+  --down: 239 68 68;
+  --warn: 245 158 11;
+  color-scheme: dark;
+}
+
+body {
+  background: rgb(var(--bg));
+  color: rgb(var(--fg));
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.legal h2 {
+  @apply pt-4 text-lg font-semibold;
+}
+.legal ul {
+  @apply list-disc space-y-1 pl-5;
+}
+.legal a {
+  @apply text-accent hover:underline;
+}
