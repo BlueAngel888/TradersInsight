@@ -21,3 +21,13 @@ body {
   color: rgb(var(--fg));
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
+
+.legal h2 {
+  @apply pt-4 text-lg font-semibold;
+}
+.legal ul {
+  @apply list-disc space-y-1 pl-5;
+}
+.legal a {
+  @apply text-accent hover:underline;
+}

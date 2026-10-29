@@ -4,7 +4,7 @@ import "./globals.css";
 import { LevelProvider } from "@/components/LevelProvider";
 import { LevelSwitcher } from "@/components/LevelSwitcher";
 import { SearchBox } from "@/components/SearchBox";
-import { Disclaimer } from "@/components/Disclaimer";
+import { Footer } from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: "Traders Insight",
@@ -42,9 +42,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             </div>
           </header>
           <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
-          <footer className="mx-auto max-w-6xl border-t border-line px-4 py-6">
-            <Disclaimer compact />
-          </footer>
+          <Footer />
         </LevelProvider>
       </body>
     </html>
