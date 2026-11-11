@@ -28,7 +28,7 @@ export interface Mt5Position {
   currentPrice?: number;
   stopLoss?: number;
   takeProfit?: number;
-  profit?: number;
+  profit?: number; // includes swap and commission
   swap?: number;
   time?: string;
 }
@@ -54,7 +54,8 @@ export function assertDemo(account: Pick<Mt5AccountInfo, "type">): void {
 
 export function buildSnapshot(account: Mt5AccountInfo, positions: Mt5Position[], now = new Date()): Mt5Snapshot {
   assertDemo(account);
-  const totalProfit = positions.reduce((s, p) => s + (p.profit ?? 0) + (p.swap ?? 0), 0);
+  // MetaApi's `profit` already includes swap and commission.
+  const totalProfit = positions.reduce((s, p) => s + (p.profit ?? 0), 0);
   return { account, positions, totalProfit: Math.round(totalProfit * 100) / 100, fetchedAt: now.toISOString() };
 }
 

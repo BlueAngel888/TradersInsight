@@ -59,3 +59,8 @@ Variabile de mediu (de pus în Vercel, nu în cod):
 | `METAAPI_ACCOUNT_ID` | ID-ul contului adăugat în MetaApi |
 | `MT5_ACCESS_KEY` | O parolă aleasă de tine, cerută pe pagina `/mt5` |
 | `METAAPI_REGION` | Opțional; altfel se citește automat din MetaApi |
+| `MT5_SYMBOLS` | Opțional; simbolurile scanate, ex. `EURUSD,XAUUSD` (implicit) |
+
+### Scanner SMC
+
+Pe aceeași pagină, secțiunea „Semnale SMC” rulează detectorul din `src/lib/setup.ts`: trend aliniat pe Daily/4H/1H, doji pe 15m/5m/1m care a luat lichiditatea, impuls, intrare limită la Fibonacci 0.786, SL dincolo de doji, TP la 1:2 și 1:3, plus confluențe (order block, FVG, suport/rezistență confirmate, volume profile). Doar semnale, fără ordine.

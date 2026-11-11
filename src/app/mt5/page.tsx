@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { formatPrice } from "@/components/format";
 import { positionSide, type Mt5Snapshot } from "@/lib/mt5";
+import { Mt5Signals } from "@/components/Mt5Signals";
 
 const KEY_STORAGE = "ti-mt5-key";
 
@@ -128,7 +129,7 @@ export default function Mt5Page() {
               <ul className="divide-y divide-line rounded-lg border border-line bg-panel">
                 {data.positions.map((p) => {
                   const side = positionSide(p.type);
-                  const pnl = (p.profit ?? 0) + (p.swap ?? 0);
+                  const pnl = p.profit ?? 0;
                   return (
                     <li key={p.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
                       <div>
@@ -148,6 +149,7 @@ export default function Mt5Page() {
               </ul>
             )}
           </section>
+          <Mt5Signals accessKey={key} />
           <p className="text-xs text-muted">Actualizat {new Date(data.fetchedAt).toLocaleTimeString("ro-RO")} · se reîmprospătează la 15 secunde.</p>
         </>
       )}

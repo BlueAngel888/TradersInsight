@@ -16,9 +16,9 @@ describe("assertDemo", () => {
 });
 
 describe("buildSnapshot", () => {
-  it("sums profit and swap across positions", () => {
+  it("sums profit across positions (swap is already included)", () => {
     const s = buildSnapshot(account, [
-      { id: "1", symbol: "EURUSD", type: "POSITION_TYPE_BUY", volume: 0.01, openPrice: 1.1, profit: 5.25, swap: -0.1 },
+      { id: "1", symbol: "EURUSD", type: "POSITION_TYPE_BUY", volume: 0.01, openPrice: 1.1, profit: 5.15, swap: -0.1 },
       { id: "2", symbol: "XAUUSD", type: "POSITION_TYPE_SELL", volume: 0.01, openPrice: 2000, profit: 7.35 },
     ], new Date("2026-11-11T00:00:00Z"));
     expect(s.totalProfit).toBe(12.5);
