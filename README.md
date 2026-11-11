@@ -46,3 +46,21 @@ Dacă sursa nu răspunde, aplicația afișează date demonstrative și un banner
 - `src/components/ChartWorkspace.tsx`: graficul cu taburi
 - `src/lib/market.ts`: sursa de date, cu cache de 5 minute
 - `src/components/AssetView.tsx`: pagina unui activ, adaptată nivelului
+
+## Cont MT5 demo (MetaApi, doar citire)
+
+Pagina `/mt5` afișează soldul, equity și pozițiile deschise ale unui cont MT5 **demo** conectat prin [MetaApi](https://metaapi.cloud). Integrarea nu plasează ordine, iar serverul refuză orice cont care nu este de tip demo.
+
+Variabile de mediu (de pus în Vercel, nu în cod):
+
+| Variabilă | Ce este |
+| --- | --- |
+| `METAAPI_TOKEN` | Tokenul API din panoul MetaApi |
+| `METAAPI_ACCOUNT_ID` | ID-ul contului adăugat în MetaApi |
+| `MT5_ACCESS_KEY` | O parolă aleasă de tine, cerută pe pagina `/mt5` |
+| `METAAPI_REGION` | Opțional; altfel se citește automat din MetaApi |
+| `MT5_SYMBOLS` | Opțional; simbolurile scanate, ex. `EURUSD,XAUUSD` (implicit) |
+
+### Scanner SMC
+
+Pe aceeași pagină, secțiunea „Semnale SMC” rulează detectorul din `src/lib/setup.ts`: trend aliniat pe Daily/4H/1H, doji pe 15m/5m/1m care a luat lichiditatea, impuls, intrare limită la Fibonacci 0.786, SL dincolo de doji, TP la 1:2 și 1:3, plus confluențe (order block, FVG, suport/rezistență confirmate, volume profile). Doar semnale, fără ordine.
