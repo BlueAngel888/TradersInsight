@@ -31,6 +31,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               <nav className="flex gap-4 text-sm text-muted">
                 <Link href="/" className="hover:text-fg">Piețe</Link>
                 <Link href="/watchlist" className="hover:text-fg">Watchlist</Link>
+                <Link href="/mt5" className="hover:text-fg">MT5</Link>
                 <Link href="/despre" className="hover:text-fg">Despre</Link>
               </nav>
               <div className="order-last w-full sm:order-none sm:ml-auto sm:w-auto sm:flex-1 sm:justify-end sm:flex">
