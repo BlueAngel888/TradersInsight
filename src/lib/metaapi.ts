@@ -13,10 +13,20 @@ const marketDataBase = (region: string) => `https://mt-market-data-client-api-v1
 export class MetaApiConfigError extends Error {}
 
 function config() {
+  // Local bridge (tools/mt5-bridge) on a Windows PC or VM: same API shape, no MetaApi account needed.
+  const bridge = process.env.MT5_BRIDGE_URL?.replace(/\/$/, "");
+  if (bridge) return { token: "local", accountId: "local", region: undefined, bridge };
   const token = process.env.METAAPI_TOKEN;
   const accountId = process.env.METAAPI_ACCOUNT_ID;
   if (!token || !accountId) throw new MetaApiConfigError("METAAPI_TOKEN și METAAPI_ACCOUNT_ID nu sunt setate.");
-  return { token, accountId, region: process.env.METAAPI_REGION };
+  return { token, accountId, region: process.env.METAAPI_REGION, bridge: undefined as string | undefined };
+}
+
+async function endpoints() {
+  const c = config();
+  if (c.bridge) return { ...c, client: c.bridge, marketData: c.bridge };
+  const region = await resolveRegion(c.token, c.accountId, c.region);
+  return { ...c, client: clientBase(region), marketData: marketDataBase(region) };
 }
 
 async function getJson<T>(url: string, token: string): Promise<T> {
@@ -40,9 +50,8 @@ async function resolveRegion(token: string, accountId: string, override?: string
 }
 
 export async function getMt5Snapshot(): Promise<Mt5Snapshot> {
-  const { token, accountId, region: override } = config();
-  const region = await resolveRegion(token, accountId, override);
-  const base = `${clientBase(region)}/users/current/accounts/${accountId}`;
+  const { token, accountId, client } = await endpoints();
+  const base = `${client}/users/current/accounts/${accountId}`;
   const account = await getJson<Mt5AccountInfo>(`${base}/account-information`, token);
   // Check demo before reading anything else from the account.
   buildSnapshot(account, []);
@@ -52,8 +61,8 @@ export async function getMt5Snapshot(): Promise<Mt5Snapshot> {
 
 interface RawCandle { time: string; open: number; high: number; low: number; close: number; tickVolume?: number; volume?: number }
 
-async function getCandles(token: string, region: string, accountId: string, symbol: string, timeframe: string, limit: number): Promise<Candle[]> {
-  const url = `${marketDataBase(region)}/users/current/accounts/${accountId}/historical-market-data/symbols/${encodeURIComponent(symbol)}/timeframes/${timeframe}/candles?limit=${limit}`;
+async function getCandles(token: string, marketData: string, accountId: string, symbol: string, timeframe: string, limit: number): Promise<Candle[]> {
+  const url = `${marketData}/users/current/accounts/${accountId}/historical-market-data/symbols/${encodeURIComponent(symbol)}/timeframes/${timeframe}/candles?limit=${limit}`;
   const raw = await getJson<RawCandle[]>(url, token);
   return raw
     .map((c) => ({
@@ -74,18 +83,17 @@ export const DEFAULT_LTFS = ["15m", "5m", "1m"];
 
 /** Runs the SMC setup detector on each symbol. Read-only: never sends orders. */
 export async function scanSetups(symbols: string[], ltfs = DEFAULT_LTFS): Promise<ScanRow[]> {
-  const { token, accountId, region: override } = config();
-  const region = await resolveRegion(token, accountId, override);
-  const account = await getJson<Mt5AccountInfo>(`${clientBase(region)}/users/current/accounts/${accountId}/account-information`, token);
+  const { token, accountId, client, marketData } = await endpoints();
+  const account = await getJson<Mt5AccountInfo>(`${client}/users/current/accounts/${accountId}/account-information`, token);
   assertDemo(account);
   const rows: ScanRow[] = [];
   for (const symbol of symbols) {
     try {
       const [d1, h4, h1] = await Promise.all(
-        (["1d", "4h", "1h"] as const).map((tf) => getCandles(token, region, accountId, symbol, tf, 300)),
+        (["1d", "4h", "1h"] as const).map((tf) => getCandles(token, marketData, accountId, symbol, tf, 300)),
       );
       for (const ltf of ltfs) {
-        const candles = await getCandles(token, region, accountId, symbol, ltf, 300);
+        const candles = await getCandles(token, marketData, accountId, symbol, ltf, 300);
         const result = detectSetup({ d1, h4, h1, ltf: candles });
         rows.push({ symbol, ltf, result });
         if (!result.setup && !result.trend.aligned) break; // no point checking other LTFs

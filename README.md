@@ -59,6 +59,7 @@ Variabile de mediu (de pus în Vercel, nu în cod):
 | `METAAPI_ACCOUNT_ID` | ID-ul contului adăugat în MetaApi |
 | `MT5_ACCESS_KEY` | O parolă aleasă de tine, cerută pe pagina `/mt5` |
 | `METAAPI_REGION` | Opțional; altfel se citește automat din MetaApi |
+| `MT5_BRIDGE_URL` | Opțional; folosește bridge-ul local MT5 (Windows) în loc de MetaApi. Vezi `tools/mt5-bridge/README.md` |
 | `MT5_SYMBOLS` | Opțional; simbolurile scanate, ex. `EURUSD,XAUUSD` (implicit) |
 
 ### Scanner SMC
