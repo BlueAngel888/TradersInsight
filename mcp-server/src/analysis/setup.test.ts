@@ -95,3 +95,20 @@ describe("positionSize", () => {
     expect(positionSize(10000, 1, 1.1, 1.095, 100000)).toBe(0.2);
   });
 });
+
+describe("Florin's 4H + 1H variant", () => {
+  const up = trending(1);
+  it("ignores the daily when it is not passed", () => {
+    expect(htfTrend(undefined, up, up).aligned).toBe("bullish");
+    expect(htfTrend(undefined, up, up).d1).toBeUndefined();
+    expect(htfTrend(trending(-1), up, up).aligned).toBeNull();
+  });
+  it("uses the requested fib level for the entry", () => {
+    const a = detectSetup({ h4: up, h1: up, ltf: bullishLtf() }, { fibLevel: 0.786 }).setup!;
+    const b = detectSetup({ h4: up, h1: up, ltf: bullishLtf() }, { fibLevel: 0.618 }).setup!;
+    expect(a).toBeTruthy();
+    const move = a.fibTo - a.fibFrom;
+    expect(a.entry).toBeCloseTo(a.fibTo - move * 0.786, 6);
+    expect(b.entry).toBeGreaterThan(a.entry); // shallower retracement → higher buy limit
+  });
+});

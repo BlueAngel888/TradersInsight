@@ -104,7 +104,7 @@ describe("end to end", () => {
     expect(init.result.serverInfo.name).toBe("traders-insight-mt5");
     const tools = await rpc("tools/list");
     expect(tools.result.tools.map((t: { name: string }) => t.name)).toEqual(
-      expect.arrayContaining(["list_accounts", "get_account", "analyze_market", "preview_trade", "execute_trade"]),
+      expect.arrayContaining(["list_accounts", "get_account", "analyze_market", "scan_setups", "preview_trade", "execute_trade"]),
     );
   });
 

@@ -37,7 +37,7 @@ export const DEFAULT_SETUP_OPTIONS: SetupOptions = {
 };
 
 export interface HtfTrend {
-  d1: Direction | "neutral";
+  d1?: Direction | "neutral"; // omitted when the daily filter is off
   h4: Direction | "neutral";
   h1: Direction | "neutral";
   aligned: Direction | null;
@@ -63,10 +63,12 @@ export interface SetupResult {
   reason: string;
 }
 
-export function htfTrend(d1: Candle[], h4: Candle[], h1: Candle[]): HtfTrend {
+/** Trend on 4H and 1H must agree; pass `d1` to require the daily as well. */
+export function htfTrend(d1: Candle[] | undefined, h4: Candle[], h1: Candle[]): HtfTrend {
   const t = (c: Candle[]) => (c.length >= 30 ? smartMoney(c).trend : "neutral");
-  const trend = { d1: t(d1), h4: t(h4), h1: t(h1) };
-  const all = [trend.d1, trend.h4, trend.h1];
+  const trend: HtfTrend = { h4: t(h4), h1: t(h1), aligned: null };
+  if (d1) trend.d1 = t(d1);
+  const all = [trend.d1, trend.h4, trend.h1].filter((x) => x !== undefined);
   const aligned = all.every((x) => x === "bullish") ? "bullish" : all.every((x) => x === "bearish") ? "bearish" : null;
   return { ...trend, aligned };
 }
@@ -97,12 +99,12 @@ export function findLiquidityDoji(ltf: Candle[], direction: Direction, o: SetupO
 }
 
 export function detectSetup(
-  frames: { d1: Candle[]; h4: Candle[]; h1: Candle[]; ltf: Candle[] },
+  frames: { d1?: Candle[]; h4: Candle[]; h1: Candle[]; ltf: Candle[] },
   options: Partial<SetupOptions> = {},
 ): SetupResult {
   const o = { ...DEFAULT_SETUP_OPTIONS, ...options };
   const trend = htfTrend(frames.d1, frames.h4, frames.h1);
-  if (!trend.aligned) return { trend, setup: null, reason: "Trendul nu e aliniat pe Daily, 4H și 1H." };
+  if (!trend.aligned) return { trend, setup: null, reason: frames.d1 ? "Trendul nu e aliniat pe Daily, 4H și 1H." : "Trendul nu e aliniat pe 4H și 1H." };
   const dir = trend.aligned;
   const ltf = frames.ltf;
   if (ltf.length < o.liquidityLookback + 10) return { trend, setup: null, reason: "Prea puține lumânări pe timeframe-ul mic." };

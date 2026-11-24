@@ -120,6 +120,43 @@ async function prepare(accountQuery: string, intent: TradeIntent): Promise<Prepa
   }
 }
 
+
+// Florin's strategy: 4H + 1H trend agree → doji that swept liquidity on 5/10/15m →
+// strong move away from it → limit entry at the Fibonacci retracement.
+const STRATEGY = { ltfs: ["5m", "10m", "15m"] as Timeframe[], fibLevel: 0.786 };
+
+type Loader = (tf: Timeframe) => Promise<Awaited<ReturnType<typeof getCandles>>>;
+
+async function scanSymbol(load: Loader, ltfs: Timeframe[], fibLevel: number, requireDaily: boolean) {
+  const [h4, h1, d1] = await Promise.all([load("4h"), load("1h"), requireDaily ? load("1d") : Promise.resolve(undefined)]);
+  const out: Record<string, unknown> = {};
+  for (const ltf of ltfs) {
+    const res = detectSetup({ d1, h4, h1, ltf: await load(ltf) }, { fibLevel });
+    out.trend = res.trend;
+    if (!res.trend.aligned) {
+      out.reason = res.reason;
+      break;
+    }
+    const s = res.setup;
+    out[ltf] = s
+      ? {
+          status: s.status,
+          reason: res.reason,
+          direction: s.direction,
+          dojiTime: new Date(s.dojiTime * 1000).toISOString(),
+          liquiditySwept: s.swept,
+          fib: { from: s.fibFrom, to: s.fibTo, level: fibLevel },
+          suggestedOrder:
+            s.status === "waiting"
+              ? { side: s.direction === "bullish" ? "buy" : "sell", orderType: "limit", entryPrice: s.entry, stopLoss: s.stopLoss, takeProfits: s.targets }
+              : null,
+          confluence: s.confluence,
+        }
+      : { reason: res.reason };
+  }
+  return out;
+}
+
 const accountLabel = (ctx: AccountContext) => `${ctx.ref.name || "cont"} · login ${ctx.ref.login} · ${ctx.kind}`;
 
 const INSTRUCTIONS = `Server MT5 (MetaApi) pentru conturile lui Florin: demo, cash (real) și funded.
@@ -334,7 +371,7 @@ export function buildServer(): McpServer {
     {
       title: "Analiză tehnică multi-timeframe",
       description:
-        "Analiză pe mai multe timeframe-uri: trend SMC (BOS/CHoCH), premium/discount, order blocks, FVG, EMA 20/50/200, RSI, ATR, volume profile (POC/VAH/VAL), suport și rezistență. Plus scanarea setup-ului SMC al lui Florin (trend aliniat D1/4H/1H → doji care ia lichiditatea pe 1–15m → intrare la fib 0.786).",
+        "Analiză pe mai multe timeframe-uri: trend SMC (BOS/CHoCH), premium/discount, order blocks, FVG, EMA 20/50/200, RSI, ATR, volume profile (POC/VAH/VAL), suport și rezistență. Plus scanarea strategiei lui Florin (vezi scan_setups).",
       inputSchema: {
         account: accountArg,
         symbol: symbolArg,
@@ -351,18 +388,41 @@ export function buildServer(): McpServer {
         const cache: Partial<Record<Timeframe, Awaited<ReturnType<typeof getCandles>>>> = {};
         const load = async (tf: Timeframe) => (cache[tf] ??= await getCandles(ref, symbol, tf, 300));
         for (const tf of timeframes as Timeframe[]) frames[tf] = summarizeFrame(await load(tf), digits);
-        const [d1, h4, h1] = await Promise.all((["1d", "4h", "1h"] as const).map(load));
-        const smcSetup: Record<string, unknown> = {};
-        for (const ltf of ["15m", "5m", "1m"] as const) {
-          const res = detectSetup({ d1, h4, h1, ltf: await load(ltf) });
-          smcSetup[ltf] = res.setup ? { ...res.setup, dojiTime: new Date(res.setup.dojiTime * 1000).toISOString(), reason: res.reason } : { reason: res.reason };
-          if (!res.trend.aligned) {
-            smcSetup.htfTrend = res.trend;
-            break;
-          }
-          smcSetup.htfTrend = res.trend;
-        }
-        return { symbol, frames, florinSmcSetup: smcSetup, note: "Estimări algoritmice, nu sfat financiar." };
+        const florinSetup = await scanSymbol(load, STRATEGY.ltfs, STRATEGY.fibLevel, false);
+        return { symbol, frames, florinSetup, note: "Estimări algoritmice, nu sfat financiar." };
+      }),
+  );
+
+  server.registerTool(
+    "scan_setups",
+    {
+      title: "Caută setup-uri (strategia lui Florin)",
+      description:
+        "Scanează simbolurile după strategia lui Florin: trendul pe 4H și 1H trebuie să fie în aceeași direcție; pe 5m, 10m și 15m caută o lumânare doji care a luat lichiditatea, urmată de o mișcare mare în direcția trendului; intrarea e un ordin limit la retragerea Fibonacci (implicit 0.786) dintre doji și vârful mișcării, SL dincolo de doji, TP la 1:2 și 1:3. Status „waiting” = ordinul limit se poate pune acum. Nu trimite ordine; pentru asta folosește preview_trade.",
+      inputSchema: {
+        account: accountArg,
+        symbols: z.array(z.string()).min(1).max(15).describe("Ex. [\"EURUSD\", \"XAUUSD\", \"GBPUSD\"]"),
+        fibLevel: z.number().min(0.5).max(0.95).default(STRATEGY.fibLevel).describe("Nivelul de retragere pentru intrare."),
+        timeframes: z.array(tfArg).min(1).max(4).default(STRATEGY.ltfs).describe("Timeframe-urile pe care se caută doji-ul."),
+        requireDaily: z.boolean().default(false).describe("Cere și trendul de pe Daily aliniat."),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    ({ account, symbols, fibLevel, timeframes, requireDaily }) =>
+      safely(async () => {
+        const ref = await resolveAccount(account);
+        const results = await Promise.all(
+          symbols.map(async (symbol) => {
+            const cache: Partial<Record<Timeframe, Awaited<ReturnType<typeof getCandles>>>> = {};
+            const load: Loader = async (tf) => (cache[tf] ??= await getCandles(ref, symbol, tf, 300));
+            try {
+              return { symbol, ...(await scanSymbol(load, timeframes as Timeframe[], fibLevel, requireDaily)) };
+            } catch (e) {
+              return { symbol, error: e instanceof Error ? e.message : String(e) };
+            }
+          }),
+        );
+        return { strategy: `4H+1H${requireDaily ? "+D1" : ""} aliniat → doji pe ${timeframes.join("/")} → intrare la fib ${fibLevel}`, results, note: "Estimări algoritmice, nu sfat financiar." };
       }),
   );
 

@@ -231,7 +231,7 @@ export const getSpecification = (a: AccountRef, symbol: string) =>
 export const getPrice = (a: AccountRef, symbol: string) =>
   call<SymbolPrice>(`${accountUrl(a)}/symbols/${encodeURIComponent(symbol)}/current-price`);
 
-export const TIMEFRAMES = ["1m", "5m", "15m", "30m", "1h", "4h", "1d", "1w", "1mn"] as const;
+export const TIMEFRAMES = ["1m", "5m", "10m", "15m", "30m", "1h", "4h", "1d", "1w", "1mn"] as const;
 export type Timeframe = (typeof TIMEFRAMES)[number];
 
 interface RawCandle {
