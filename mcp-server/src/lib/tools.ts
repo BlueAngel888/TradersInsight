@@ -123,7 +123,7 @@ async function prepare(accountQuery: string, intent: TradeIntent): Promise<Prepa
 
 // Florin's strategy: 4H + 1H trend agree → doji that swept liquidity on 5/10/15m →
 // strong move away from it → limit entry at the Fibonacci retracement.
-const STRATEGY = { ltfs: ["5m", "10m", "15m"] as Timeframe[], fibLevel: 0.786 };
+const STRATEGY = { ltfs: ["5m", "10m", "15m"] as Timeframe[], fibLevel: 0.768 };
 
 type Loader = (tf: Timeframe) => Promise<Awaited<ReturnType<typeof getCandles>>>;
 
@@ -398,7 +398,7 @@ export function buildServer(): McpServer {
     {
       title: "Caută setup-uri (strategia lui Florin)",
       description:
-        "Scanează simbolurile după strategia lui Florin: trendul pe 4H și 1H trebuie să fie în aceeași direcție; pe 5m, 10m și 15m caută o lumânare doji care a luat lichiditatea, urmată de o mișcare mare în direcția trendului; intrarea e un ordin limit la retragerea Fibonacci (implicit 0.786) dintre doji și vârful mișcării, SL dincolo de doji, TP la 1:2 și 1:3. Status „waiting” = ordinul limit se poate pune acum. Nu trimite ordine; pentru asta folosește preview_trade.",
+        "Scanează simbolurile după strategia lui Florin: trendul pe 4H și 1H trebuie să fie în aceeași direcție; pe 5m, 10m și 15m caută o lumânare doji care a luat lichiditatea, urmată de o mișcare mare în direcția trendului; intrarea e un ordin limit la retragerea Fibonacci (implicit 0.768) dintre doji și vârful mișcării, SL dincolo de doji, TP la 1:2 și 1:3. Status „waiting” = ordinul limit se poate pune acum. Nu trimite ordine; pentru asta folosește preview_trade.",
       inputSchema: {
         account: accountArg,
         symbols: z.array(z.string()).min(1).max(15).describe("Ex. [\"EURUSD\", \"XAUUSD\", \"GBPUSD\"]"),

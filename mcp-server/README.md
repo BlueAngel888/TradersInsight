@@ -15,7 +15,7 @@ Merge și din aplicația Claude de pe iPhone, pentru că rulează pe Vercel.
 | `get_price` | Bid/ask, spread, volum minim/maxim |
 | `get_candles` | Lumânări OHLCV brute |
 | `analyze_market` | Trend SMC (BOS/CHoCH), premium/discount, order blocks, FVG, EMA 20/50/200, RSI, ATR, volume profile, suport/rezistență |
-| `scan_setups` | Strategia ta pe mai multe simboluri: trend 4H + 1H aliniat → doji care ia lichiditatea pe 5m/10m/15m → mișcare mare → ordin limit la retragerea Fibonacci (implicit 0.786, se poate schimba), SL după doji, TP 1:2 / 1:3 |
+| `scan_setups` | Strategia ta pe mai multe simboluri: trend 4H + 1H aliniat → doji care ia lichiditatea pe 5m/10m/15m → mișcare mare → ordin limit la retragerea Fibonacci (implicit 0.768, se poate schimba), SL după doji, TP 1:2 / 1:3 |
 | `calculate_position_size` | Lotul pentru un risc în % la un stop dat |
 | `deploy_account` | Pornește un cont oprit în MetaApi |
 | `preview_trade` | **Pasul 1**: verifică tranzacția și arată riscul. Nu trimite nimic. |
